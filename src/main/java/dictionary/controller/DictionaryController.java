@@ -2,12 +2,15 @@ package dictionary.controller;
 import java.util.List;
 
 import dictionary.model.*;
+import dictionary.view.DictionaryView;
 
 public class DictionaryController {
-    private DictionaryModel dm = new DictionaryModel();
+    private DictionaryModel dm;
+    private DictionaryView dv;
 
-    public void initialize(String path) {
-        dm.loadDictionary(path);
+    public DictionaryController(DictionaryModel dm, DictionaryView dv) {
+        this.dm = dm;
+        this.dv = dv;
     }
 
     public void printAll() {

@@ -37,6 +37,22 @@ public class DictionaryModel {
         }
     }
 
+    public DictionaryEntry findWordByName(String name) {
+        if (wordsHashMap.get(name) != null)
+            return wordsHashMap.get(name);
+
+        return null;
+    }
+
+    public void addWord(DictionaryEntry newWord) {
+        if (wordsHashMap.get(newWord.getWord()) != null)
+            return;
+
+        wordsList.add(newWord);
+        wordsHashMap.put(newWord.getWord(), newWord);
+        // TO DO add definition hashmap
+    }
+
     public List<DictionaryEntry> getWordsList() {
         return wordsList;
     }
