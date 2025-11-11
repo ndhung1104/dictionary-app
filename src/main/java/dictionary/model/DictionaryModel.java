@@ -1,8 +1,6 @@
 package dictionary.model;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -14,8 +12,12 @@ public class DictionaryModel {
     private Map<String, DictionaryEntry> definitionsHashMap = new HashMap<>();
 
     public void loadDictionary(String path) {
+        InputStream in = DictionaryModel.class.getClassLoader().getResourceAsStream(path);
+        if (in == null) {
+            throw new IllegalStateException("Không tìm thấy file " + path + " trong classpath!");
+        }
 
-        try (BufferedReader br = new BufferedReader(new FileReader(path))) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] lineSplit = line.trim().split("`", 2);

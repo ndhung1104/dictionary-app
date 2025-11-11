@@ -1,9 +1,9 @@
 import dictionary.controller.*;
 
 public class DictionaryApp {
-    public void main(String[] args) {
+    public static void main(String[] args) {
         DictionaryController dc = new DictionaryController();
-        dc.initialize("./slang.txt");
+        dc.initialize("slang.txt");
         dc.printAll();
     }
 
