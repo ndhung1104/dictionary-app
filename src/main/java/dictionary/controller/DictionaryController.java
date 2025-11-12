@@ -4,6 +4,7 @@ import java.util.stream.Collectors;
 
 import dictionary.model.*;
 import dictionary.view.DictionaryView;
+import javafx.scene.control.Alert;
 
 public class DictionaryController {
     private DictionaryModel dm;
@@ -111,6 +112,55 @@ public class DictionaryController {
             }
             dv.showDefinition(finalResults);
         }
+    }
+
+    public void onAddWord(String word, String definition){
+        if (word == null || word.isBlank() || definition == null || definition.isBlank()) {
+            dv.showAlert(Alert.AlertType.ERROR, "Error", "Word or definition cannot be blank!");
+            return;
+        }
+        word = word.trim();
+        definition = definition.trim();
+        if (word.contains(" ") || word.contains("`")){
+            dv.showAlert(Alert.AlertType.ERROR, "Error", "Word cannot contain space or ` character!");
+            return;
+        }
+        if (definition.contains("`")){
+            dv.showAlert(Alert.AlertType.ERROR, "Error", "Definition cannot contain ` character!");
+            return;
+        }
+
+        DictionaryEntry wordEntry = dm.findWordByName(word);
+
+        if (wordEntry == null){
+            DictionaryEntry newWord = new DictionaryEntry(word, definition);
+            dm.addWord(newWord);
+            dv.showAlert(Alert.AlertType.INFORMATION, "Success", "Word added successfully!");
+        } else {
+            dv.showDuplicatedWordAlert(wordEntry);
+        }
+    }
+
+    public void onOverrideWord(DictionaryEntry newWord){
+        dm.overrideWord(newWord);
+    }
+
+    public void onDuplicateWord(DictionaryEntry newWord) {
+
+        int count = 1;
+        String newWordName = newWord.getWord() + "(" + count + ")";
+        while (dm.findWordByName(newWordName) != null) {
+            count++;
+            newWordName = newWord.getWord() + "(" + count + ")";
+        }
+        DictionaryEntry newWordWithNewName = new DictionaryEntry(newWordName, newWord.getDefinition());
+        dm.addWord(newWordWithNewName);
+        dv.onWordAdded(newWordName);
+    }
+
+    public void onDeleteWord(String word) {
+        dm.deleteWord(word);
+        dv.onWordDeleted(word);
     }
 }
 

@@ -5,8 +5,10 @@ import dictionary.model.DictionaryEntry;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
 import javafx.geometry.Side;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
@@ -16,6 +18,12 @@ import java.util.List;
 import java.util.Set;
 
 public class DictionaryView {
+
+    private Stage stageRef;
+    private enum SceneId { LOOKUP, EDITOR, GAME }
+    private SceneId currentScene = null;
+    private final java.util.Map<SceneId, Scene> scenes = new java.util.EnumMap<>(SceneId.class);
+    private boolean switchingScene = false;
 
     public void setDc(DictionaryController dc) {
         this.dc = dc;
@@ -51,6 +59,53 @@ public class DictionaryView {
     private Button deleteWordBtn;
     private Button resetListBtn;
 
+    private ObservableList<String> fxNames;
+    private SortedList<String> sortedList;
+
+    private HBox buildNavBar(String scene) {
+        Button btnLookup = new Button("Dictionary");
+        Button btnEditor = new Button("Edit");
+        Button btnGame   = new Button("Game");
+
+        if (scene.equals("LOOKUP")) {
+            btnLookup.setDisable(true);
+        } else if (scene.equals("EDITOR")) {
+            btnEditor.setDisable(true);
+        } else if (scene.equals("GAME")) {
+            btnGame.setDisable(true);
+        }
+
+        btnLookup.setOnAction(e -> switchScene(SceneId.LOOKUP));
+        btnEditor.setOnAction(e -> switchScene(SceneId.EDITOR));
+        btnGame.setOnAction(e -> switchScene(SceneId.GAME));
+
+        HBox nav = new HBox(8, btnLookup, btnEditor, btnGame);
+        nav.setPadding(new Insets(8, 10, 8, 10));
+        nav.setStyle("-fx-background-color: linear-gradient(to bottom, #fafafa, #ececec); -fx-border-color: #ddd;");
+        return nav;
+    }
+
+    private void fadeIn(Parent root) {
+        root.setOpacity(0.0);
+        javafx.animation.FadeTransition ft = new javafx.animation.FadeTransition(javafx.util.Duration.millis(180), root);
+        ft.setFromValue(0.0);
+        ft.setToValue(1.0);
+        ft.play();
+    }
+
+    private void switchScene(SceneId target) {
+        if (switchingScene || target == currentScene) return;
+        switchingScene = true;
+
+        Scene s = scenes.get(target);
+        if (s == null) { switchingScene = false; return; }
+
+        stageRef.setScene(s);
+        fadeIn(s.getRoot());
+        currentScene = target;
+        switchingScene = false;
+    }
+
     private void dictionaryLookupSceneInit(){
         // Top: search box
         searchField = new TextField();
@@ -64,7 +119,7 @@ public class DictionaryView {
         definitionResultsMenu.prefWidthProperty().bind(searchDefinitionField.widthProperty());
         definitionResultsListView = new ListView<>();
         definitionResultsContainer = new CustomMenuItem(definitionResultsListView, false);
-        HBox topBar = new HBox(8, new Label("Word:"), searchField, searchBtn, searchDefinitionField, searchDefinitionBtn);
+        HBox topBar = new HBox(8, new Label("Word:"), searchField, searchBtn, searchDefinitionField, searchDefinitionBtn, buildNavBar("LOOKUP"));
         topBar.setPadding(new Insets(10));
 
         // Left: word list
@@ -134,6 +189,7 @@ public class DictionaryView {
         );
 
         dictionaryLookupScene = new Scene(root, 800, 500);
+        scenes.put(SceneId.LOOKUP, dictionaryLookupScene);
     }
 
     private void dictionaryEditorSceneInit() {
@@ -141,13 +197,15 @@ public class DictionaryView {
         editorSearchField.setPromptText("Enter a word...");
         editorSearchBtn = new Button("Search");
 
-        HBox topBar = new HBox(8, new Label("Word:"), editorSearchField, editorSearchBtn);
+        HBox topBar = new HBox(8, new Label("Word:"), editorSearchField, editorSearchBtn, buildNavBar("EDITOR"));
         topBar.setPadding(new Insets(10));
 
         dictionaryEditorWordsList = new ListView<>();
         List<String> names = dc.getWordNamesSorted(); // pure data
-        ObservableList<String> fxNames = FXCollections.observableArrayList(names); // convert for UI
-        dictionaryEditorWordsList.setItems(fxNames);
+        fxNames = FXCollections.observableArrayList(names); // convert for UI
+        sortedList = new SortedList<>(fxNames, String.CASE_INSENSITIVE_ORDER);
+
+        dictionaryEditorWordsList.setItems(sortedList);
 
         Label editorWordLabel = new Label("Word:");
         editorWordArea = new TextArea();
@@ -211,12 +269,11 @@ public class DictionaryView {
             dc.onEditWord(newVal);
         });
 //
-//        addWordBtn.setOnAction(e -> {
-//            String w = editorWordArea.getText();
-//            String d = editorDefinitionArea.getText();
-//            // dc.onAddWord(w, d);
-//
-//        });
+        addWordBtn.setOnAction(e -> {
+            String w = editorWordArea.getText();
+            String d = editorDefinitionArea.getText();
+             dc.onAddWord(w, d);
+        });
 //
 //        editWordBtn.setOnAction(e -> {
 //            String selected = dictionaryEditorWordsList.getSelectionModel().getSelectedItem();
@@ -231,17 +288,30 @@ public class DictionaryView {
 //        });
 //
 //        // Delete selected word (enabled only when selected)
-//        deleteWordBtn.setOnAction(e -> {
-//            String selected = dictionaryEditorWordsList.getSelectionModel().getSelectedItem();
-//            if (selected != null) {
-//                // dc.onDeleteWord(selected);
-//                int idx = dictionaryEditorWordsList.getSelectionModel().getSelectedIndex();
-//                dictionaryEditorWordsList.getItems().remove(idx);
-//                dictionaryEditorWordsList.getSelectionModel().clearSelection();
-//                editorWordArea.clear();
-//                editorDefinitionArea.clear();
-//            }
-//        });
+        deleteWordBtn.setOnAction(e -> {
+            String selected = dictionaryEditorWordsList.getSelectionModel().getSelectedItem();
+            if (selected == null) return;
+
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+            confirm.setTitle("Confirm Delete");
+            confirm.setHeaderText(null);
+            confirm.setContentText("Are you sure you want to delete the word: \"" + selected + "\"?");
+
+            ButtonType btnYes = new ButtonType("Delete", ButtonBar.ButtonData.OK_DONE);
+            ButtonType btnCancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+            confirm.getButtonTypes().setAll(btnYes, btnCancel);
+
+            confirm.showAndWait().ifPresent(response -> {
+                if (response == btnYes) {
+                    dc.onDeleteWord(selected);
+                    editorWordArea.clear();
+                    editorDefinitionArea.clear();
+
+                    showAlert(Alert.AlertType.INFORMATION, "Deleted", "Word \"" + selected + "\" has been deleted.");
+                }
+            });
+        });
+
 //
 //        // Reset list (always enabled) — for now just clear
 //        resetListBtn.setOnAction(e -> {
@@ -249,6 +319,53 @@ public class DictionaryView {
 //            editorWordArea.clear();
 //            editorDefinitionArea.clear();
 //        });
+        scenes.put(SceneId.EDITOR, dictionaryEditorScene);
+    }
+
+    public void showAlert(Alert.AlertType type, String title, String message) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(type);
+            alert.setTitle(title);
+            alert.setHeaderText(null);
+            alert.setContentText(message);
+            alert.showAndWait();
+        });
+    }
+
+    public void showDeleteAlert() {
+
+    }
+
+    public void onWordAdded(String name) {
+        Platform.runLater(() -> fxNames.add(name));
+    }
+    public void onWordDeleted(String name) {
+        Platform.runLater(() -> fxNames.remove(name));
+    }
+
+    public void showDuplicatedWordAlert(DictionaryEntry newWord){
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("Duplicated word!");
+            alert.setHeaderText(null);
+            alert.setContentText("There is another version of this word in the database. Do you want to override it, duplicate, or cancel?");
+
+            ButtonType btnOverride = new ButtonType("Override");
+            ButtonType btnDuplicate = new ButtonType("Duplicate");
+            ButtonType btnCancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+            alert.getButtonTypes().setAll(btnOverride, btnDuplicate, btnCancel);
+
+            alert.showAndWait().ifPresent(response -> {
+                if (response == btnOverride) {
+                    dc.onOverrideWord(newWord);
+                } else if (response == btnDuplicate) {
+                    dc.onDuplicateWord(newWord);
+                } else {
+                    return;
+                }
+            });
+        });
     }
 
 
@@ -256,10 +373,12 @@ public class DictionaryView {
 
     public void start(Stage stage) {
 
+        this.stageRef = stage;
+
         dictionaryLookupSceneInit();
         dictionaryEditorSceneInit();
         stage.setTitle("Dictionary App");
-        stage.setScene(dictionaryEditorScene);
+        stage.setScene(dictionaryLookupScene);
         stage.show();
 
         dc.initialize();

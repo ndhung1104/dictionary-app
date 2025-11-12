@@ -94,8 +94,50 @@ public class DictionaryModel {
 
         wordsList.add(newWord);
         wordsHashMap.put(newWord.getWord(), newWord);
-        addKeywordToDefinitionHashMap(newWord.getDefinition(), newWord.getWord());
+        this.addKeywordToDefinitionHashMap(newWord.getDefinition(), newWord.getWord());
     }
+
+    public void deleteWord(String word) {
+        DictionaryEntry oldEntry = wordsHashMap.get(word);
+        if (oldEntry == null)
+            return;
+
+        wordsHashMap.remove(word);
+
+        wordsList.removeIf(entry -> entry.getWord().equalsIgnoreCase(word));
+
+        for (List<String> list : definitionsHashMap.values()) {
+            list.removeIf(w -> w.equalsIgnoreCase(word));
+        }
+
+        definitionsHashMap.entrySet().removeIf(e -> e.getValue().isEmpty());
+
+    }
+
+    public void overrideWord(DictionaryEntry newWord) {
+        String word = newWord.getWord();
+
+        if (!wordsHashMap.containsKey(word)) {
+            addWord(newWord);
+            return;
+        }
+
+        this.deleteWord(word);
+//        DictionaryEntry oldEntry = wordsHashMap.get(word);
+//
+//        wordsList.removeIf(entry -> entry.getWord().equalsIgnoreCase(word));
+//
+//        for (List<String> list : definitionsHashMap.values()) {
+//            list.removeIf(w -> w.equalsIgnoreCase(word));
+//        }
+//
+//        definitionsHashMap.entrySet().removeIf(e -> e.getValue().isEmpty());
+
+        wordsList.add(newWord);
+        wordsHashMap.put(word, newWord);
+        this.addKeywordToDefinitionHashMap(newWord.getDefinition(), word);
+    }
+
 
     public List<DictionaryEntry> getWordsList() {
         return wordsList;
