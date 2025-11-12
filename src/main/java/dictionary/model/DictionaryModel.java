@@ -2,6 +2,7 @@ package dictionary.model;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class DictionaryModel {
     private List<DictionaryEntry> wordsList = new ArrayList<>();
@@ -98,6 +99,13 @@ public class DictionaryModel {
 
     public List<DictionaryEntry> getWordsList() {
         return wordsList;
+    }
+
+    public List<String> getWordNamesSorted() {
+        return wordsList.stream()
+                .map(DictionaryEntry::getWord)
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .collect(Collectors.toList());
     }
 
 

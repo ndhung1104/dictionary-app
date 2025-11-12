@@ -27,6 +27,20 @@ public class DictionaryController {
         System.out.println("Number of words: " + Integer.toString(lst.size()));
     }
 
+    public void onEditWord(String word) {
+        if (word == null || word.isBlank()) {
+            return;
+        }
+        word = word.trim();
+
+        DictionaryEntry wordEntry = dm.findWordByName(word);
+        if (wordEntry != null) {
+//            System.out.println("Found word");
+            dv.showWordOnEditScreen(wordEntry);
+        }
+
+    }
+
     public void onSearchWord(String word) {
 //        System.out.println("From controller: " + word);
         if (word == null || word.isBlank()) {
@@ -44,6 +58,13 @@ public class DictionaryController {
             dv.showWord(wordEntry);
         }
     }
+
+    public List<String> getWordNamesSorted(){
+        return dm.getWordNamesSorted();
+    }
+
+
+
     public void onSearchDefinition(String keywords) {
         if (keywords == null || keywords.isBlank()) {
             dv.showMessage("Please enter at least 1 keyword");
@@ -88,7 +109,7 @@ public class DictionaryController {
             for (String w : finalResults) {
                 System.out.println(w);
             }
-//            dv.showResults(finalResults);
+            dv.showDefinition(finalResults);
         }
     }
 }
