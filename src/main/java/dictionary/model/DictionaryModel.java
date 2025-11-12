@@ -20,6 +20,8 @@ public class DictionaryModel {
         try (BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
             String line;
             while ((line = br.readLine()) != null) {
+                if (line.equals("Slag`Meaning"))
+                    continue;
                 String[] lineSplit = line.trim().split("`", 2);
                 if (lineSplit.length < 2)
                     continue;
