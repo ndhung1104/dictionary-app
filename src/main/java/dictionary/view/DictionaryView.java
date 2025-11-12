@@ -27,13 +27,20 @@ public class DictionaryView {
     private Label statusLabel;
     private TextArea wordNameArea;
     private boolean updatingWordList;
+
+    private TextField searchDefinitionField;
+
     public void start(Stage stage) {
         // Top: search box
         searchField = new TextField();
         searchField.setPromptText("Enter a word...");
         Button searchBtn = new Button("Search");
 
-        HBox topBar = new HBox(8, new Label("Word:"), searchField, searchBtn);
+        searchDefinitionField = new TextField();
+        searchDefinitionField.setPromptText("Endter keywords...");
+        Button searchDefinitionBtn = new Button("Search");
+
+        HBox topBar = new HBox(8, new Label("Word:"), searchField, searchBtn, searchDefinitionField, searchDefinitionBtn);
         topBar.setPadding(new Insets(10));
 
         // Left: word list
@@ -77,14 +84,17 @@ public class DictionaryView {
         BorderPane.setMargin(definitionBox, new Insets(10));
         searchBtn.setOnAction(event -> {
             System.out.println(searchField.getText());
-            dc.onSearch(searchField.getText());
+            dc.onSearchWord(searchField.getText());
+        });
+
+        searchDefinitionBtn.setOnAction(event -> {
+            System.out.println(searchDefinitionField.getText());
+            dc.onSearchDefinition(searchDefinitionField.getText());
         });
 
         wordsList.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal == null || updatingWordList) return;
-            if (newVal != null) {
-                dc.onSearch(newVal);
-            }
+            dc.onSearchWord(newVal);
         });
 
 
