@@ -4,7 +4,12 @@ import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class DictionaryModel {
+public class DictionaryModel implements Serializable {
+    private static final long serialVersionUID = 1L;
+    private static final String BINARY_PATH = "slang.bin";
+    private static final String TXT_PATH = "slang.txt";
+
+
     private List<DictionaryEntry> wordsList = new ArrayList<>();
     private Map<String, DictionaryEntry> wordsHashMap = new HashMap<>();
     private Map<String, List<String>> definitionsHashMap = new HashMap<>();
@@ -36,11 +41,16 @@ public class DictionaryModel {
         }
     }
 
-    public void loadDictionary(String path) {
+    public void loadDefaultDictionary() {
+        String path = TXT_PATH;
         InputStream in = DictionaryModel.class.getClassLoader().getResourceAsStream(path);
         if (in == null) {
             throw new IllegalStateException("Không tìm thấy file " + path + " trong classpath!");
         }
+
+        wordsList.clear();
+        wordsHashMap.clear();
+        definitionsHashMap.clear();
 
         try (BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
             String line;
@@ -61,9 +71,70 @@ public class DictionaryModel {
                 }
             }
         } catch (IOException e) {
-            System.err.println("Send halp to load dictionary. Message: " + e.getMessage());
+            System.err.println("Send halp to load default dictionary. Message: " + e.getMessage());
+        }
+        saveBinaryDictionary();
+    }
+
+    public void saveBinaryDictionary() {
+        String path = BINARY_PATH;
+        File file = new File(path);
+        try {
+            File parent = file.getParentFile();
+            if (parent != null && !parent.exists()) {
+                parent.mkdirs();
+            }
+            try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(file))) {
+                out.writeObject(this);
+            }
+        } catch (IOException e) {
+            System.err.println("Send halp to save binary dictionary: " + e.getMessage());
         }
     }
+
+    public void loadBinaryDictionary() {
+        String path = BINARY_PATH;
+        File file = new File(path);
+
+        if (!file.exists()) {
+            System.err.println("Send halp to load binary dictionary: file does not exist: " + path);
+            return;
+        }
+
+        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(file))) {
+            DictionaryModel loaded = (DictionaryModel) in.readObject();
+
+            this.wordsList.clear();
+            this.wordsList.addAll(loaded.wordsList);
+
+            this.wordsHashMap.clear();
+            this.wordsHashMap.putAll(loaded.wordsHashMap);
+
+            this.definitionsHashMap.clear();
+            this.definitionsHashMap.putAll(loaded.definitionsHashMap);
+
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("Send halp to load binary dictionary. Message: " + e.getMessage());
+        }
+    }
+
+    public void loadDictionary() {
+        File binaryFile = new File(BINARY_PATH);
+
+        if (binaryFile.exists()) {
+            try {
+                loadBinaryDictionary();
+                System.out.println("Loaded dictionary from binary: " + BINARY_PATH);
+                return;
+            } catch (Exception e) {
+                System.err.println("Binary load failed, fall back to txt instead.");
+            }
+        }
+
+        System.out.println("Binary dictionary not found or failed. Loading default txt...");
+        loadDefaultDictionary();
+    }
+
 
     public DictionaryEntry findWordByName(String name) {
         if (wordsHashMap.get(name) != null)
@@ -95,6 +166,7 @@ public class DictionaryModel {
         wordsList.add(newWord);
         wordsHashMap.put(newWord.getWord(), newWord);
         this.addKeywordToDefinitionHashMap(newWord.getDefinition(), newWord.getWord());
+        saveBinaryDictionary();
     }
 
     public void deleteWord(String word) {
@@ -111,7 +183,7 @@ public class DictionaryModel {
         }
 
         definitionsHashMap.entrySet().removeIf(e -> e.getValue().isEmpty());
-
+        saveBinaryDictionary();
     }
 
     public void overrideWord(DictionaryEntry newWord) {
@@ -136,6 +208,7 @@ public class DictionaryModel {
         wordsList.add(newWord);
         wordsHashMap.put(word, newWord);
         this.addKeywordToDefinitionHashMap(newWord.getDefinition(), word);
+        saveBinaryDictionary();
     }
 
 
@@ -150,5 +223,18 @@ public class DictionaryModel {
                 .collect(Collectors.toList());
     }
 
+    public List<DictionaryEntry> get4Words() {
+        Random r = new Random();
+        Set<Integer> setIndex = new HashSet<>();
+
+        while (setIndex.size() < 4) {
+            setIndex.add(r.nextInt(wordsList.size()));
+        }
+        List<DictionaryEntry> listWord = new ArrayList<>();
+        for (int i : setIndex) {
+            listWord.add(wordsList.get(i));
+        }
+        return listWord;
+    }
 
 }

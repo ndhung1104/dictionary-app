@@ -16,7 +16,10 @@ public class DictionaryController {
     }
 
     public void initialize() {
-        this.dm.loadDictionary("slang.txt");
+        this.dm.loadDictionary();
+    }
+    public void reloadDictionary() {
+        this.dm.loadDefaultDictionary();
     }
 
     public void printAll() {
@@ -36,7 +39,6 @@ public class DictionaryController {
 
         DictionaryEntry wordEntry = dm.findWordByName(word);
         if (wordEntry != null) {
-//            System.out.println("Found word");
             dv.showWordOnEditScreen(wordEntry);
         }
 
@@ -161,6 +163,28 @@ public class DictionaryController {
     public void onDeleteWord(String word) {
         dm.deleteWord(word);
         dv.onWordDeleted(word);
+    }
+
+    public void show4WordGame() {
+        List<DictionaryEntry> listWord = dm.get4Words();
+        Random r = new Random();
+        int idx = r.nextInt(4);
+        List<String> listAnswer = new ArrayList<>();
+        for (DictionaryEntry i : listWord) {
+            listAnswer.add(i.getWord());
+        }
+        dv.showQuestion(listWord.get(idx).getDefinition(), listAnswer, idx);
+    }
+
+    public void show4DefinitionGame() {
+        List<DictionaryEntry> listWord = dm.get4Words();
+        Random r = new Random();
+        int idx = r.nextInt(4);
+        List<String> listDefinition = new ArrayList<>();
+        for (DictionaryEntry i : listWord) {
+            listDefinition.add(i.getDefinition());
+        }
+        dv.showQuestion(listWord.get(idx).getWord(), listDefinition, idx);
     }
 }
 

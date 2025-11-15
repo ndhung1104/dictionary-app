@@ -7,7 +7,9 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.geometry.Side;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -43,7 +45,7 @@ public class DictionaryView {
     private ListView<String> definitionResultsListView;
     private CustomMenuItem definitionResultsContainer;
 
-    private Scene dictionaryLookupScene, dictionaryEditorScene, gameScene;
+    private Scene dictionaryLookupScene, dictionaryEditorScene, dictionaryGameScene;
 
     //editor scene var
     private TextField editorSearchField;
@@ -60,7 +62,12 @@ public class DictionaryView {
     private Button resetListBtn;
 
     private ObservableList<String> fxNames;
+    private javafx.collections.transformation.FilteredList<String> filteredNames;
     private SortedList<String> sortedList;
+
+    //game scene
+    private VBox centerBox;
+
 
     private HBox buildNavBar(String scene) {
         Button btnLookup = new Button("Dictionary");
@@ -113,7 +120,7 @@ public class DictionaryView {
         Button searchBtn = new Button("Search");
 
         searchDefinitionField = new TextField();
-        searchDefinitionField.setPromptText("Endter keywords...");
+        searchDefinitionField.setPromptText("Enter keywords...");
         Button searchDefinitionBtn = new Button("Search");
         definitionResultsMenu = new ContextMenu();
         definitionResultsMenu.prefWidthProperty().bind(searchDefinitionField.widthProperty());
@@ -203,9 +210,32 @@ public class DictionaryView {
         dictionaryEditorWordsList = new ListView<>();
         List<String> names = dc.getWordNamesSorted(); // pure data
         fxNames = FXCollections.observableArrayList(names); // convert for UI
-        sortedList = new SortedList<>(fxNames, String.CASE_INSENSITIVE_ORDER);
+
+        filteredNames = new javafx.collections.transformation.FilteredList<>(fxNames, s -> true);
+
+        sortedList = new SortedList<>(filteredNames, String.CASE_INSENSITIVE_ORDER);
 
         dictionaryEditorWordsList.setItems(sortedList);
+        editorSearchField.textProperty().addListener((obs, oldVal, newVal) -> {
+            String filter = (newVal == null) ? "" : newVal.trim().toLowerCase();
+
+            if (filter.isEmpty()) {
+                // Show all words when search box is empty
+                filteredNames.setPredicate(s -> true);
+            } else {
+                // Show only words that contain the typed text (case-insensitive)
+                filteredNames.setPredicate(name ->
+                        name.toLowerCase().contains(filter)
+                );
+            }
+        });
+
+        editorSearchBtn.setOnAction(e -> {
+            if (!sortedList.isEmpty()) {
+                dictionaryEditorWordsList.getSelectionModel().select(0);
+                dictionaryEditorWordsList.scrollTo(0);
+            }
+        });
 
         Label editorWordLabel = new Label("Word:");
         editorWordArea = new TextArea();
@@ -249,18 +279,6 @@ public class DictionaryView {
 
         dictionaryEditorScene = new Scene(root, 800, 500);
 
-
-        // Search (reuse controller API or keep stub to wire later)
-//        editorSearchBtn.setOnAction(e -> {
-//            String word = editorSearchField.getText();
-//            if (word != null && !word.isBlank()) {
-//                // Example: fetch and populate editor fields
-//                // dc.onEditorSearchWord(word);
-//                // For now, just fill the word box:
-//                editorWordArea.setText(word);
-//                // editorDefinitionArea.setText(... result from controller/model ...);
-//            }
-//        });
 
 //        editorSearchField.setOnAction(e -> editorSearchBtn.fire());
 
@@ -312,15 +330,100 @@ public class DictionaryView {
             });
         });
 
-//
-//        // Reset list (always enabled) — for now just clear
-//        resetListBtn.setOnAction(e -> {
-//            dictionaryEditorWordsList.getItems().clear();
-//            editorWordArea.clear();
-//            editorDefinitionArea.clear();
-//        });
+        resetListBtn.setOnAction(e -> {
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+            confirm.setTitle("Reset Dictionary");
+            confirm.setHeaderText(null);
+            confirm.setContentText(
+                    "This will reload the dictionary from the source and discard any unsaved changes.\n\n" +
+                            "Do you want to continue?"
+            );
+
+            ButtonType btnReset = new ButtonType("Reset", ButtonBar.ButtonData.OK_DONE);
+            ButtonType btnCancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+            confirm.getButtonTypes().setAll(btnReset, btnCancel);
+
+            confirm.showAndWait().ifPresent(response -> {
+                if (response == btnReset) {
+                    dc.reloadDictionary();
+
+                    List<String> newList = dc.getWordNamesSorted();
+                    fxNames.setAll(newList);
+                    editorWordArea.clear();
+                    editorDefinitionArea.clear();
+
+                    showAlert(Alert.AlertType.INFORMATION,
+                            "Dictionary Reset",
+                            "The dictionary has been reloaded.");
+                }
+            });
+        });
         scenes.put(SceneId.EDITOR, dictionaryEditorScene);
     }
+
+    private void dictionaryGameSceneInit() {
+        HBox topBar = new HBox(8, buildNavBar("GAME"));
+        topBar.setPadding(new Insets(10));
+
+        Button show4WordBtn = new Button("GUESS THE DEFINITION");
+        Button show4DefinitionBtn = new Button("GUESS THE WORD");
+
+        HBox buttonBar = new HBox(2, show4DefinitionBtn, show4WordBtn);
+
+        centerBox = new VBox(10);
+        centerBox.setPadding(new Insets(20));
+
+        BorderPane root = new BorderPane();
+        root.setTop(topBar);
+//        root.setLeft(dictionaryEditorWordsList);
+        root.setCenter(centerBox);
+        root.setBottom(buttonBar);
+
+        show4DefinitionBtn.setOnAction(e -> dc.show4DefinitionGame());
+        show4WordBtn.setOnAction(e -> dc.show4WordGame());
+
+        dictionaryGameScene = new Scene(root, 800, 500);
+        scenes.put(SceneId.GAME, dictionaryGameScene);
+    }
+
+    public void showQuestion(String prompt, List<String> options, int correctIndex) {
+        centerBox.getChildren().clear();
+
+        Label promptLabel = new Label(prompt);
+        promptLabel.setWrapText(true);
+
+        VBox content = new VBox(10);
+        content.setAlignment(Pos.CENTER);
+        content.getChildren().add(promptLabel);
+
+        for (int i = 0; i < options.size(); i++) {
+            Button btn = new Button(options.get(i));
+            btn.setMaxWidth(Double.MAX_VALUE);
+            int idx = i;
+
+            btn.setOnAction(e -> {
+                for (Node n : content.getChildren()) {
+                    if (n instanceof Button) {
+                        n.setDisable(true);
+                    }
+                }
+
+                // highlight correct one
+                Button correctBtn = (Button) content.getChildren().get(correctIndex + 1);
+                correctBtn.setStyle("-fx-background-color: lightgreen;");
+
+                // if wrong, mark clicked red
+                if (idx != correctIndex) {
+                    btn.setStyle("-fx-background-color: lightcoral;");
+                }
+            });
+
+            content.getChildren().add(btn);
+        }
+
+        centerBox.getChildren().add(content);
+    }
+
 
     public void showAlert(Alert.AlertType type, String title, String message) {
         Platform.runLater(() -> {
@@ -377,11 +480,10 @@ public class DictionaryView {
 
         dictionaryLookupSceneInit();
         dictionaryEditorSceneInit();
+        dictionaryGameSceneInit();
         stage.setTitle("Dictionary App");
         stage.setScene(dictionaryLookupScene);
         stage.show();
-
-        dc.initialize();
     }
 
     private String[] splitDefinition(DictionaryEntry wordEntry) {
