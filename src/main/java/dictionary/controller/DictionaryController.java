@@ -248,6 +248,16 @@ public class DictionaryController {
         }
         dv.showQuestion(listWord.get(idx).getWord(), listDefinition, idx);
     }
+
+    public void showRandomWordOfTheDay() {
+        DictionaryEntry randomEntry = dm.getRandomWord();
+        if (randomEntry == null) {
+            dv.showAlert(Alert.AlertType.INFORMATION, "Dictionary Empty", "There are no entries to show right now.");
+            return;
+        }
+        dv.showWord(randomEntry);
+        dv.showMessage("On this day slang word");
+    }
 }
 
 

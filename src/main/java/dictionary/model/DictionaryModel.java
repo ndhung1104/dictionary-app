@@ -245,4 +245,11 @@ public class DictionaryModel implements Serializable {
         return new ArrayList<>(shuffled.subList(0, 4));
     }
 
+    public DictionaryEntry getRandomWord() {
+        if (wordsList.isEmpty()) {
+            return null;
+        }
+        Random random = new Random();
+        return wordsList.get(random.nextInt(wordsList.size()));
+    }
 }

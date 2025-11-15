@@ -124,6 +124,7 @@ public class DictionaryView {
         searchDefinitionField.setPromptText("Enter keywords...");
         searchDefinitionField.setPrefWidth(110);
         Button searchDefinitionBtn = new Button("Search");
+        Button randomWordBtn = new Button("Random Slang");
         definitionResultsMenu = new ContextMenu();
         definitionResultsMenu.prefWidthProperty().bind(searchDefinitionField.widthProperty());
         definitionResultsListView = new ListView<>();
@@ -134,7 +135,7 @@ public class DictionaryView {
         HBox.setHgrow(lookupSpacer, Priority.ALWAYS);
         HBox searchRow = new HBox(8,
                 wordSearchLabel, searchField, searchBtn,
-                defSearchLabel, searchDefinitionField, searchDefinitionBtn,
+                defSearchLabel, searchDefinitionField, searchDefinitionBtn, randomWordBtn,
                 lookupSpacer, buildNavBar("LOOKUP")
         );
         searchRow.setAlignment(Pos.CENTER_LEFT);
@@ -187,6 +188,7 @@ public class DictionaryView {
             System.out.println(searchDefinitionField.getText());
             dc.onSearchDefinition(searchDefinitionField.getText());
         });
+        randomWordBtn.setOnAction(e -> dc.showRandomWordOfTheDay());
 
         wordsList.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal == null || updatingWordList) return;
