@@ -138,6 +138,7 @@ public class DictionaryController {
             DictionaryEntry newWord = new DictionaryEntry(word, definition);
             dm.addWord(newWord);
             dv.showAlert(Alert.AlertType.INFORMATION, "Success", "Word added successfully!");
+            dv.onWordAdded(newWord.getWord());
         } else {
             dv.showDuplicatedWordAlert(wordEntry);
         }
