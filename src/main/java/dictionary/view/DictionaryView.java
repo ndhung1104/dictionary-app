@@ -117,20 +117,37 @@ public class DictionaryView {
         // Top: search box
         searchField = new TextField();
         searchField.setPromptText("Enter a word...");
+        searchField.setPrefWidth(130);
         Button searchBtn = new Button("Search");
 
         searchDefinitionField = new TextField();
         searchDefinitionField.setPromptText("Enter keywords...");
+        searchDefinitionField.setPrefWidth(110);
         Button searchDefinitionBtn = new Button("Search");
         definitionResultsMenu = new ContextMenu();
         definitionResultsMenu.prefWidthProperty().bind(searchDefinitionField.widthProperty());
         definitionResultsListView = new ListView<>();
         definitionResultsContainer = new CustomMenuItem(definitionResultsListView, false);
-        HBox topBar = new HBox(8, new Label("Word:"), searchField, searchBtn, searchDefinitionField, searchDefinitionBtn, buildNavBar("LOOKUP"));
+        Label wordSearchLabel = new Label("Word:");
+        Label defSearchLabel = new Label("Definition:");
+        Region lookupSpacer = new Region();
+        HBox.setHgrow(lookupSpacer, Priority.ALWAYS);
+        HBox searchRow = new HBox(8,
+                wordSearchLabel, searchField, searchBtn,
+                defSearchLabel, searchDefinitionField, searchDefinitionBtn,
+                lookupSpacer, buildNavBar("LOOKUP")
+        );
+        searchRow.setAlignment(Pos.CENTER_LEFT);
+
+        VBox topBar = new VBox(6, searchRow);
         topBar.setPadding(new Insets(10));
 
         // Left: word list
+        Label historyLabel = new Label("History");
+        historyLabel.setStyle("-fx-font-size: 14px;");
         wordsList = new ListView<>();
+        VBox leftColumn = new VBox(6, historyLabel, wordsList);
+        leftColumn.setPadding(new Insets(10));
 
         Label wordNameLabel = new Label("Word:");
         wordNameArea = new TextArea();
@@ -144,8 +161,9 @@ public class DictionaryView {
         definitionArea.setEditable(false);
         definitionArea.setWrapText(true);
 
-        VBox definitionBox = new VBox(5);
+        VBox definitionBox = new VBox(6);
         definitionBox.getChildren().addAll(wordNameLabel, wordNameArea, definitionLabel, definitionArea);
+        definitionBox.setPadding(new Insets(10));
         VBox.setVgrow(definitionArea, Priority.ALWAYS);
 
         // Bottom: status
@@ -157,13 +175,9 @@ public class DictionaryView {
         // Layout
         BorderPane root = new BorderPane();
         root.setTop(topBar);
-        root.setLeft(wordsList);
-//        root.setCenter(definitionArea);
+        root.setLeft(leftColumn);
         root.setCenter(definitionBox);
         root.setBottom(bottomBar);
-        BorderPane.setMargin(wordsList, new Insets(10));
-//        BorderPane.setMargin(definitionArea, new Insets(10));
-        BorderPane.setMargin(definitionBox, new Insets(10));
         searchBtn.setOnAction(event -> {
             System.out.println(searchField.getText());
             dc.onSearchWord(searchField.getText());
@@ -202,11 +216,19 @@ public class DictionaryView {
     private void dictionaryEditorSceneInit() {
         editorSearchField = new TextField();
         editorSearchField.setPromptText("Enter a word...");
+        editorSearchField.setPrefWidth(130);
         editorSearchBtn = new Button("Search");
 
-        HBox topBar = new HBox(8, new Label("Word:"), editorSearchField, editorSearchBtn, buildNavBar("EDITOR"));
+        Region editorSpacer = new Region();
+        HBox.setHgrow(editorSpacer, Priority.ALWAYS);
+        HBox searchRow = new HBox(8, new Label("Word:"), editorSearchField, editorSearchBtn, editorSpacer, buildNavBar("EDITOR"));
+        searchRow.setAlignment(Pos.CENTER_LEFT);
+
+        VBox topBar = new VBox(6, searchRow);
         topBar.setPadding(new Insets(10));
 
+        Label editorListLabel = new Label("List of words");
+        editorListLabel.setStyle("-fx-font-size: 14px;");
         dictionaryEditorWordsList = new ListView<>();
         List<String> names = dc.getWordNamesSorted(); // pure data
         fxNames = FXCollections.observableArrayList(names); // convert for UI
@@ -266,16 +288,23 @@ public class DictionaryView {
                 dictionaryEditorWordsList.getSelectionModel().selectedItemProperty().isNull()
         );
 
-        HBox buttonBar = new HBox(10, addWordBtn, editWordBtn, deleteWordBtn, resetListBtn);
+        deleteWordBtn.setStyle("-fx-background-color: #f8d7da; -fx-text-fill: #b00020;");
+
+        Region buttonSpacer = new Region();
+        HBox.setHgrow(buttonSpacer, Priority.ALWAYS);
+        HBox buttonBar = new HBox(12, addWordBtn, editWordBtn, resetListBtn, buttonSpacer, deleteWordBtn);
+        buttonBar.setAlignment(Pos.CENTER_LEFT);
         buttonBar.setPadding(new Insets(10));
         buttonBar.setStyle("-fx-background-color: #f0f0f0;");
 
+        VBox editorLeftColumn = new VBox(6, editorListLabel, dictionaryEditorWordsList);
+        editorLeftColumn.setPadding(new Insets(10));
+
         BorderPane root = new BorderPane();
         root.setTop(topBar);
-        root.setLeft(dictionaryEditorWordsList);
+        root.setLeft(editorLeftColumn);
         root.setCenter(centerBox);
         root.setBottom(buttonBar);
-        BorderPane.setMargin(dictionaryEditorWordsList, new Insets(10));
 
         dictionaryEditorScene = new Scene(root, 800, 500);
 
@@ -369,16 +398,32 @@ public class DictionaryView {
     }
 
     private void dictionaryGameSceneInit() {
-        HBox topBar = new HBox(8, buildNavBar("GAME"));
+        HBox topBar = new HBox();
+        Region navSpacer = new Region();
+        HBox.setHgrow(navSpacer, Priority.ALWAYS);
+        topBar.getChildren().addAll(navSpacer, buildNavBar("GAME"));
         topBar.setPadding(new Insets(10));
 
         Button show4WordBtn = new Button("GUESS THE DEFINITION");
         Button show4DefinitionBtn = new Button("GUESS THE WORD");
+        show4WordBtn.setPrefWidth(220);
+        show4DefinitionBtn.setPrefWidth(220);
+        String baseGameButtonStyle = "-fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 12 24; "
+                + "-fx-background-radius: 10; -fx-border-radius: 10; -fx-font-size: 14px; "
+                + "-fx-effect: dropshadow(two-pass-box, rgba(0,0,0,0.25), 8, 0, 0, 2);";
+        show4DefinitionBtn.setStyle(baseGameButtonStyle + " -fx-background-color: linear-gradient(#ff9a9e, #d4145a);");
+        show4WordBtn.setStyle(baseGameButtonStyle + " -fx-background-color: linear-gradient(#00c6ff, #0072ff);");
 
-        HBox buttonBar = new HBox(2, show4DefinitionBtn, show4WordBtn);
+        HBox buttonBar = new HBox(16, show4DefinitionBtn, show4WordBtn);
+        buttonBar.setAlignment(Pos.CENTER);
+        buttonBar.setPadding(new Insets(0, 0, 50, 0));
 
         centerBox = new VBox(10);
         centerBox.setPadding(new Insets(20));
+        centerBox.setAlignment(Pos.CENTER);
+        Label gameHint = new Label("Choose a mode to begin");
+        gameHint.setStyle("-fx-font-size: 16px; -fx-text-fill: #555;");
+        centerBox.getChildren().add(gameHint);
 
         BorderPane root = new BorderPane();
         root.setTop(topBar);
