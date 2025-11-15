@@ -166,10 +166,67 @@ public class DictionaryController {
         dv.onWordDeleted(word);
     }
 
+    public void onUpdateWord(String selectedWord, String updatedWord, String updatedDefinition) {
+        if (selectedWord == null || selectedWord.isBlank()) {
+            dv.showAlert(Alert.AlertType.ERROR, "Error", "Please select a word to edit.");
+            return;
+        }
+
+        String originalWord = selectedWord.trim();
+
+        if (updatedWord == null || updatedWord.isBlank() || updatedDefinition == null || updatedDefinition.isBlank()) {
+            dv.showAlert(Alert.AlertType.ERROR, "Error", "Word or definition cannot be blank!");
+            return;
+        }
+
+        updatedWord = updatedWord.trim();
+        updatedDefinition = updatedDefinition.trim();
+
+        if (updatedWord.contains(" ") || updatedWord.contains("`")) {
+            dv.showAlert(Alert.AlertType.ERROR, "Error", "Word cannot contain space or ` character!");
+            return;
+        }
+
+        if (updatedDefinition.contains("`")) {
+            dv.showAlert(Alert.AlertType.ERROR, "Error", "Definition cannot contain ` character!");
+            return;
+        }
+
+        DictionaryEntry existingEntry = dm.findWordByName(originalWord);
+        if (existingEntry == null) {
+            dv.showAlert(Alert.AlertType.ERROR, "Error", "Selected word no longer exists. Please reload the list.");
+            return;
+        }
+
+        DictionaryEntry duplicateEntry = dm.findWordByName(updatedWord);
+        if (duplicateEntry != null && !duplicateEntry.getWord().equals(originalWord)) {
+            dv.showAlert(Alert.AlertType.ERROR, "Error", "Another word with the new name already exists!");
+            return;
+        }
+
+        DictionaryEntry updatedEntry = new DictionaryEntry(updatedWord, updatedDefinition);
+
+        if (originalWord.equals(updatedWord)) {
+            dm.overrideWord(updatedEntry);
+        } else {
+            dm.deleteWord(originalWord);
+            dm.addWord(updatedEntry);
+            dv.onWordDeleted(originalWord);
+            dv.onWordAdded(updatedWord);
+        }
+
+        dv.showAlert(Alert.AlertType.INFORMATION, "Success", "Word updated successfully!");
+        dv.showWordOnEditScreen(updatedEntry);
+    }
+
     public void show4WordGame() {
         List<DictionaryEntry> listWord = dm.get4Words();
+        if (listWord.isEmpty()) {
+            dv.showAlert(Alert.AlertType.INFORMATION, "Not enough words", "Please make sure the dictionary has at least 4 entries to play the game.");
+            return;
+        }
         Random r = new Random();
-        int idx = r.nextInt(4);
+        int idx = r.nextInt(listWord.size());
         List<String> listAnswer = new ArrayList<>();
         for (DictionaryEntry i : listWord) {
             listAnswer.add(i.getWord());
@@ -179,8 +236,12 @@ public class DictionaryController {
 
     public void show4DefinitionGame() {
         List<DictionaryEntry> listWord = dm.get4Words();
+        if (listWord.isEmpty()) {
+            dv.showAlert(Alert.AlertType.INFORMATION, "Not enough words", "Please make sure the dictionary has at least 4 entries to play the game.");
+            return;
+        }
         Random r = new Random();
-        int idx = r.nextInt(4);
+        int idx = r.nextInt(listWord.size());
         List<String> listDefinition = new ArrayList<>();
         for (DictionaryEntry i : listWord) {
             listDefinition.add(i.getDefinition());

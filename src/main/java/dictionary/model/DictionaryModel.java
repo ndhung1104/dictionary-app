@@ -137,8 +137,19 @@ public class DictionaryModel implements Serializable {
 
 
     public DictionaryEntry findWordByName(String name) {
-        if (wordsHashMap.get(name) != null)
-            return wordsHashMap.get(name);
+        if (name == null || name.isBlank()) {
+            return null;
+        }
+        DictionaryEntry exact = wordsHashMap.get(name);
+        if (exact != null) {
+            return exact;
+        }
+
+        for (DictionaryEntry entry : wordsHashMap.values()) {
+            if (entry.getWord().equalsIgnoreCase(name)) {
+                return entry;
+            }
+        }
 
         return null;
     }
@@ -160,7 +171,7 @@ public class DictionaryModel implements Serializable {
     }
 
     public void addWord(DictionaryEntry newWord) {
-        if (wordsHashMap.get(newWord.getWord()) != null)
+        if (findWordByName(newWord.getWord()) != null)
             return;
 
         wordsList.add(newWord);
@@ -170,16 +181,17 @@ public class DictionaryModel implements Serializable {
     }
 
     public void deleteWord(String word) {
-        DictionaryEntry oldEntry = wordsHashMap.get(word);
+        DictionaryEntry oldEntry = findWordByName(word);
         if (oldEntry == null)
             return;
 
-        wordsHashMap.remove(word);
+        String exactKey = oldEntry.getWord();
+        wordsHashMap.remove(exactKey);
 
-        wordsList.removeIf(entry -> entry.getWord().equalsIgnoreCase(word));
+        wordsList.removeIf(entry -> entry.getWord().equalsIgnoreCase(exactKey));
 
         for (List<String> list : definitionsHashMap.values()) {
-            list.removeIf(w -> w.equalsIgnoreCase(word));
+            list.removeIf(w -> w.equalsIgnoreCase(exactKey));
         }
 
         definitionsHashMap.entrySet().removeIf(e -> e.getValue().isEmpty());
@@ -224,17 +236,13 @@ public class DictionaryModel implements Serializable {
     }
 
     public List<DictionaryEntry> get4Words() {
-        Random r = new Random();
-        Set<Integer> setIndex = new HashSet<>();
+        if (wordsList.size() < 4) {
+            return Collections.emptyList();
+        }
 
-        while (setIndex.size() < 4) {
-            setIndex.add(r.nextInt(wordsList.size()));
-        }
-        List<DictionaryEntry> listWord = new ArrayList<>();
-        for (int i : setIndex) {
-            listWord.add(wordsList.get(i));
-        }
-        return listWord;
+        List<DictionaryEntry> shuffled = new ArrayList<>(wordsList);
+        Collections.shuffle(shuffled, new Random());
+        return new ArrayList<>(shuffled.subList(0, 4));
     }
 
 }

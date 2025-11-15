@@ -293,17 +293,24 @@ public class DictionaryView {
              dc.onAddWord(w, d);
         });
 //
-//        editWordBtn.setOnAction(e -> {
-//            String selected = dictionaryEditorWordsList.getSelectionModel().getSelectedItem();
-//            if (selected != null) {
-//                String newWord = editorWordArea.getText();
-//                String newDef  = editorDefinitionArea.getText();
-//                // dc.onEditWord(selected, newWord, newDef);
-//                // Optionally update list item text if word name changed:
-//                // int idx = dictionaryEditorWordsList.getSelectionModel().getSelectedIndex();
-//                // dictionaryEditorWordsList.getItems().set(idx, newWord);
-//            }
-//        });
+        editWordBtn.setOnAction(e -> {
+            String selected = dictionaryEditorWordsList.getSelectionModel().getSelectedItem();
+            if (selected == null) {
+                return;
+            }
+            String newWord = editorWordArea.getText();
+            String newDef  = editorDefinitionArea.getText();
+
+            dc.onUpdateWord(selected, newWord, newDef);
+
+            String targetSelection = (newWord == null) ? "" : newWord.trim();
+            if (!targetSelection.isEmpty()) {
+                Platform.runLater(() -> {
+                    dictionaryEditorWordsList.getSelectionModel().select(targetSelection);
+                    dictionaryEditorWordsList.scrollTo(targetSelection);
+                });
+            }
+        });
 //
 //        // Delete selected word (enabled only when selected)
         deleteWordBtn.setOnAction(e -> {
