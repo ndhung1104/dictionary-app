@@ -190,6 +190,10 @@ public class DictionaryView {
         });
         randomWordBtn.setOnAction(e -> dc.showRandomWordOfTheDay());
 
+        if (dc != null) {
+            updateHistoryList(dc.getSearchHistory());
+        }
+
         wordsList.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal == null || updatingWordList) return;
             dc.onSearchWord(newVal);
@@ -547,25 +551,25 @@ public class DictionaryView {
 
     public void showWord(DictionaryEntry wordEntry) {
         Platform.runLater(() -> {
+            String[] definitionList = splitDefinition(wordEntry);
+            wordNameArea.setText(wordEntry.getWord());
+            StringBuilder bulletList = new StringBuilder();
+            for (String def : definitionList) {
+                bulletList.append("- ").append(def).append("\n");
+            }
+            definitionArea.setText(bulletList.toString());
+        });
+    }
+
+    public void updateHistoryList(List<String> history) {
+        Platform.runLater(() -> {
             updatingWordList = true;
             try {
-                statusLabel.setText("Found: " + wordEntry.getWord());
-                if (wordsList.getItems().contains(wordEntry.getWord())) {
-                    wordsList.getItems().remove(wordEntry.getWord());
+                wordsList.getItems().setAll(history);
+                if (!history.isEmpty()) {
+                    wordsList.getSelectionModel().select(0);
+                    wordsList.scrollTo(0);
                 }
-                wordsList.getItems().add(0, wordEntry.getWord());
-                if (wordsList.getItems().size() > 20) {
-                    wordsList.getItems().remove(wordsList.getItems().size() - 1);
-                }
-                String[] definitionList = splitDefinition(wordEntry);
-                wordNameArea.setText(wordEntry.getWord());
-                StringBuilder bulletList = new StringBuilder();
-                for (String def : definitionList) {
-                    bulletList.append("• ").append(def).append("\n");
-                }
-                definitionArea.setText(bulletList.toString());
-                wordsList.getSelectionModel().selectFirst();
-                wordsList.scrollTo(0);
             } finally {
                 updatingWordList = false;
             }

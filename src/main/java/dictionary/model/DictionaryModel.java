@@ -8,31 +8,105 @@ public class DictionaryModel implements Serializable {
     private static final long serialVersionUID = 1L;
     private static final String BINARY_PATH = "slang.bin";
     private static final String TXT_PATH = "slang.txt";
+    private static final String HISTORY_PATH = "history.txt";
+    private static final int HISTORY_LIMIT = 20;
 
 
     private List<DictionaryEntry> wordsList = new ArrayList<>();
     private Map<String, DictionaryEntry> wordsHashMap = new HashMap<>();
     private Map<String, List<String>> definitionsHashMap = new HashMap<>();
+    private Deque<String> searchHistory = new ArrayDeque<>();
+
+    private void ensureHistoryInitialized() {
+        if (searchHistory == null) {
+            searchHistory = new ArrayDeque<>();
+        }
+    }
+
+    private void addHistoryEntryInternal(String word) {
+        ensureHistoryInitialized();
+        if (word == null || word.isBlank()) {
+            return;
+        }
+        String trimmed = word.trim();
+        searchHistory.removeIf(existing -> existing.equalsIgnoreCase(trimmed));
+        searchHistory.addFirst(trimmed);
+        while (searchHistory.size() > HISTORY_LIMIT) {
+            searchHistory.removeLast();
+        }
+    }
+
+    public void recordHistory(String word) {
+        addHistoryEntryInternal(word);
+        saveHistory();
+    }
+
+    public List<String> getSearchHistory() {
+        ensureHistoryInitialized();
+        return new ArrayList<>(searchHistory);
+    }
+
+    public void loadHistory() {
+        ensureHistoryInitialized();
+        searchHistory.clear();
+        File file = new File(HISTORY_PATH);
+        if (!file.exists()) {
+            return;
+        }
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String trimmed = line.trim();
+                if (!trimmed.isEmpty()) {
+                    searchHistory.addLast(trimmed);
+                }
+            }
+            List<String> existing = new ArrayList<>(searchHistory);
+            searchHistory.clear();
+            for (int i = existing.size() - 1; i >= 0; i--) {
+                addHistoryEntryInternal(existing.get(i));
+            }
+        } catch (IOException e) {
+            System.err.println("Send halp to load history. Message: " + e.getMessage());
+        }
+    }
+
+    private void saveHistory() {
+        ensureHistoryInitialized();
+        File file = new File(HISTORY_PATH);
+        try {
+            File parent = file.getParentFile();
+            if (parent != null && !parent.exists()) {
+                parent.mkdirs();
+            }
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+                for (String word : searchHistory) {
+                    writer.write(word);
+                    writer.newLine();
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Send halp to save history. Message: " + e.getMessage());
+        }
+    }
 
     private void addKeywordToDefinitionHashMap(String definition, String slangWord) {
         String[] definitionList = definition.split("\\s*\\|\\s*");
         for (String definitionElement : definitionList) {
-            String cleanDefinition = definitionElement.trim(); // Đảm bảo sạch
+            String cleanDefinition = definitionElement.trim(); 
             if (cleanDefinition.isEmpty()) {
-                continue; // Bỏ qua nếu định nghĩa rỗng
+                continue; 
             }
 
             if (!definitionsHashMap.containsKey(cleanDefinition)) {
-                // Nếu định nghĩa này chưa có trong map
-                // Tạo một list mới
+
                 List<String> wordsForThisDef = new ArrayList<>();
-                // Thêm từ slang hiện tại vào
                 wordsForThisDef.add(slangWord);
-                // Đặt list mới này vào map
+                
                 definitionsHashMap.put(cleanDefinition, wordsForThisDef);
             } else {
-                // Nếu định nghĩa này đã có
-                // Lấy list cũ ra
+                
                 List<String> existingList = definitionsHashMap.get(cleanDefinition);
                 if (!existingList.contains(slangWord)) {
                     existingList.add(slangWord);

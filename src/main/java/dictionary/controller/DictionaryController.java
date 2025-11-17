@@ -17,6 +17,7 @@ public class DictionaryController {
 
     public void initialize() {
         this.dm.loadDictionary();
+        this.dm.loadHistory();
     }
     public void reloadDictionary() {
         this.dm.loadDefaultDictionary();
@@ -58,7 +59,10 @@ public class DictionaryController {
             dv.showMessage("Word not found!");
         } else {
 //            System.out.println("Found word");
+            dm.recordHistory(wordEntry.getWord());
+            dv.updateHistoryList(dm.getSearchHistory());
             dv.showWord(wordEntry);
+            dv.showMessage("Found: " + wordEntry.getWord());
         }
     }
 
@@ -66,6 +70,9 @@ public class DictionaryController {
         return dm.getWordNamesSorted();
     }
 
+    public List<String> getSearchHistory() {
+        return dm.getSearchHistory();
+    }
 
 
     public void onSearchDefinition(String keywords) {
@@ -255,6 +262,8 @@ public class DictionaryController {
             dv.showAlert(Alert.AlertType.INFORMATION, "Dictionary Empty", "There are no entries to show right now.");
             return;
         }
+        dm.recordHistory(randomEntry.getWord());
+        dv.updateHistoryList(dm.getSearchHistory());
         dv.showWord(randomEntry);
         dv.showMessage("On this day slang word");
     }
